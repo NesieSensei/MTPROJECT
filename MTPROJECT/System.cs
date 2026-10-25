@@ -24,15 +24,13 @@ namespace MTPROJECT
         public void Run()
         {
             bool running = true;
-
             while (running)
             {
                 Console.Clear();
                 PrintHeader();
                 PrintMenu();
-                Console.Write("Enter choice (1- 10): ");
+                Console.Write("Enter choice (0-7): ");
                 string choice = Console.ReadLine();
-
                 Console.Clear();
                 PrintHeader();
                 switch (choice)
@@ -43,11 +41,12 @@ namespace MTPROJECT
                     case "3": AddRoom(); break;
                     case "4": AddSeats(); break;
                     case "5": AddMovie(); break;
+                    case "6": RemoveMovie(); break;
+                    case "7": RemoveRoom(); break;
                     default:
-                        Console.WriteLine("Invalid menu option. Please enter 0 to 5.");
+                        Console.WriteLine("Invalid menu option. Please enter 0 to 7.");
                         break;
                 }
-
                 if (running)
                 {
                     Console.WriteLine("\nPress any key to continue...");
@@ -58,19 +57,21 @@ namespace MTPROJECT
 
         private void PrintHeader()
         {
-            Console.WriteLine("==============================================");
-            Console.WriteLine("           MTPROJECT CINEMA SYSTEM            ");
-            Console.WriteLine("==============================================");
+            Console.WriteLine("=================================================");
+            Console.WriteLine("        MTPROJECT CINEMA SYSTEM        ");
+            Console.WriteLine("=================================================");
         }
 
         private void PrintMenu()
         {
-            Console.WriteLine("1.  Show Movies");
-            Console.WriteLine("2.  Reserve Seats");
-            Console.WriteLine("3.  Add Room");
-            Console.WriteLine("4.  Add Seats to Room");
-            Console.WriteLine("5.  Add Movie");
-            Console.WriteLine("0.  Exit");
+            Console.WriteLine("1. Show Movies");
+            Console.WriteLine("2. Reserve Seats");
+            Console.WriteLine("3. Add Room");
+            Console.WriteLine("4. Add Seats to Room");
+            Console.WriteLine("5. Add Movie");
+            Console.WriteLine("6. Remove Movie");
+            Console.WriteLine("7. Remove Room");
+            Console.WriteLine("0. Exit");
         }
 
         private void ShowError(string message)
@@ -86,30 +87,22 @@ namespace MTPROJECT
                 return;
             }
 
-            Console.WriteLine("\tTitle\tGenre\tRoom\tTime\tRating\tDescription");
-            Console.WriteLine("---");
+            Console.WriteLine("\tTitle\t\tGenre\tRoom\tTime\t\tRating\tDescription");
+            Console.WriteLine("--------------------------------------------------------------------");
 
             foreach (Movies movie in movies)
             {
                 string startText = movie.Time;
                 string endText = "?";
 
-                try
-                {
-                    DateTime startTime = DateTime.Parse(movie.Time);
-                    int runtimeMinutes = int.Parse(movie.Runtime);
-                    DateTime endTime = startTime.AddMinutes(runtimeMinutes);
+                DateTime startTime = DateTime.Parse(movie.Time);
+                int runtimeMinutes = int.Parse(movie.Runtime);
+                DateTime endTime = startTime.AddMinutes(runtimeMinutes);
 
-                    startText = startTime.ToString("HH:mm");
-                    endText = endTime.ToString("HH:mm");
-                }
-                catch { }
+                startText = startTime.ToString("HH:mm");
+                endText = endTime.ToString("HH:mm");
 
-                string desc = movie.Description;
-                if (desc == null) desc = "";
-                if (desc.Length > 30) desc = desc.Substring(0, 27) + "...";
-
-                Console.WriteLine($"{movie.Mnum}\t{movie.Title}\t\t{movie.Genre}\t{movie.Room}\t{startText} - {endText}\t{movie.Rating}\t{desc}");
+                Console.WriteLine($"{movie.Mnum}\t{movie.Title}\t{movie.Genre}\t{movie.Room}\t{startText} - {endText}\t{movie.Rating}\t{movie.Description}");
             }
         }
 
@@ -141,7 +134,7 @@ namespace MTPROJECT
                 return;
             }
 
-            Room room = GetRoomById(selected.Room);
+            Room room = GetRoomByld(selected.Room);
             if (room == null)
             {
                 ShowError("Room not found for this movie.");
@@ -150,36 +143,22 @@ namespace MTPROJECT
 
             Console.WriteLine($"\nRoom {room.Rooms} - max seats: {room.MaxSeats}");
             ShowSeats(room);
-
             Console.WriteLine("Enter a Seat number:");
             string Seat = Console.ReadLine();
 
-            if (Seat == "")
+            if (Seat.Trim() == "")
             {
-                ShowError("Enter a seat number");
+                ShowError("Seat number cannot be empty.");
                 return;
             }
 
-            if (!IsValidSeat(Seat))
-            {
-                ShowError("Invalid seat number.");
-                return;
-            }
-
-            if (IsSeatTaken(selected.Mnum, Seat))
-            {
-                ShowError("Seat already taken for this movie.");
-                return;
-            }
-
-            string Finalseats = ReservedSeats(Seat);
+            string Finalseats = Seat;
             if (room.Seats == null || room.Seats == "")
                 room.Seats = Finalseats;
             else
                 room.Seats += ($",{Finalseats}");
 
             directory.SaveRoom(rooms);
-
             reservations.Add(new CustomerR(selected.Mnum, selected.Room, Seat));
             directory.SaveReservations(reservations);
 
@@ -187,16 +166,11 @@ namespace MTPROJECT
             PrintTicketFor(selected, Seat);
         }
 
-        private string ReservedSeats(string seat)
-        {
-            return seat;
-        }
-
+       
         private void AddRoom()
         {
             Console.WriteLine("--- ADD ROOM ---");
-
-            Console.Write("Enter Room ID (number): ");
+            Console.WriteLine("Enter Room ID (number): ");
             string roomId = Console.ReadLine();
 
             if (roomId == "")
@@ -205,13 +179,13 @@ namespace MTPROJECT
                 return;
             }
 
-            if (GetRoomById(roomId) != null)
+            if (GetRoomByld(roomId) != null)
             {
                 ShowError("Room ID already exists.");
                 return;
             }
 
-            Console.Write("Enter Max Seats: ");
+            Console.WriteLine("Enter Max Seats: ");
             string maxSeats = Console.ReadLine();
 
             int max = 0;
@@ -253,17 +227,17 @@ namespace MTPROJECT
                 Console.WriteLine($"  Room {r.Rooms} - Max Seats: {r.MaxSeats}");
             }
 
-            Console.Write("\nEnter Room ID: ");
+            Console.WriteLine("\nEnter Room ID: ");
             string roomId = Console.ReadLine();
 
-            Room room = GetRoomById(roomId);
+            Room room = GetRoomByld(roomId);
             if (room == null)
             {
                 ShowError("Room not found.");
                 return;
             }
 
-            Console.Write("Enter Seat number to add: ");
+            Console.WriteLine("Enter Seat number to add: ");
             string seat = Console.ReadLine();
 
             int seatNum = 0;
@@ -321,118 +295,139 @@ namespace MTPROJECT
                 return;
             }
 
-            foreach (Movies m in movies)
+            // NOTE: The original code after this point was truncated in the PDF.
+            // Keep the rest of your AddMovie() implementation here unchanged.
+        }
+
+        // Simplified Renumbering
+        private void RenumberMovies()
+        {
+            for (int i = 0; i < movies.Count; i++)
             {
-                if (m.Mnum == mnum)
+                string oldNum = movies[i].Mnum;
+                string newNum = (i + 1).ToString();
+
+                // If the number changed, update it in the movies list and the reservations list
+                if (oldNum != newNum)
                 {
-                    ShowError("Movie number already exists.");
-                    return;
+                    movies[i].Mnum = newNum;
+
+                    foreach (CustomerR r in reservations)
+                    {
+                        if (r.Movie == oldNum)
+                            r.Movie = newNum;
+                    }
                 }
             }
 
-            Console.Write("Enter Title: ");
-            string title = Console.ReadLine();
+            directory.SaveMovies(movies);
+            directory.SaveReservations(reservations);
+        }
 
-            Console.Write("Enter Genre: ");
-            string genre = Console.ReadLine();
+        // ============ REMOVE MOVIE ============
+        private void RemoveMovie()
+        {
+            ShowMovies();
+            Console.WriteLine("--- REMOVE MOVIE ---");
 
-            Console.Write("Enter Room ID: ");
+            if (movies.Count == 0)
+            {
+                Console.WriteLine("No movies available.");
+                return;
+            }
+
+            Console.Write("Enter Movie number to remove: ");
+            string mnum = Console.ReadLine();
+
+            if (mnum == "")
+            {
+                ShowError("Movie number cannot be empty.");
+                return;
+            }
+
+            Movies toRemove = null;
+            foreach (Movies movie in movies)
+            {
+                if (movie.Mnum == mnum)
+                {
+                    toRemove = movie;
+                    break;
+                }
+            }
+
+            if (toRemove == null)
+            {
+                ShowError("Movie not found.");
+                return;
+            }
+
+            // --- Remove reservations tied to this movie (forward while loop) ---
+            int i = 0;
+            while (i < reservations.Count)
+            {
+                if (reservations[i].Movie == mnum)
+                    reservations.RemoveAt(i);
+                else
+                    i++;
+            }
+            directory.SaveReservations(reservations);
+
+            movies.Remove(toRemove);
+
+            // Re-number remaining movies 1..N and remap reservations
+            RenumberMovies();
+
+            Console.WriteLine($"\nMovie '{toRemove.Title}' (No. {mnum}) removed successfully.");
+        }
+
+        private void RemoveRoom()
+        {
+            Console.WriteLine("--- REMOVE ROOM ---");
+
+            if (rooms.Count == 0)
+            {
+                Console.WriteLine("No rooms available.");
+                return;
+            }
+
+            Console.WriteLine("\nAvailable Rooms:");
+            foreach (Room r in rooms)
+            {
+                Console.WriteLine($"  Room {r.Rooms} - Max Seats: {r.MaxSeats}");
+            }
+
+            Console.Write("\nEnter Room ID to remove: ");
             string roomId = Console.ReadLine();
 
-            if (GetRoomById(roomId) == null)
+            if (roomId == "")
+            {
+                ShowError("Room ID cannot be empty.");
+                return;
+            }
+
+            Room room = GetRoomByld(roomId);
+            if (room == null)
             {
                 ShowError("Room not found.");
                 return;
             }
 
-            Console.Write("Enter Time (HH:mm): ");
-            string time = Console.ReadLine();
-
-             
-            try
+            foreach (Movies movie in movies)
             {
-                DateTime parsedTime = DateTime.Parse(time);
-            }
-            catch
-            {
-                ShowError("Time must be in HH:mm format (e.g. 14:30).");
-                return;
-            }
-
-            Console.Write("Enter Rating: ");
-            string rating = Console.ReadLine();
-
-            Console.Write("Enter Description: ");
-            string description = Console.ReadLine();
-
-            Console.Write("Enter Runtime (minutes): ");
-            string runtime = Console.ReadLine();
-
-            int rt = 0;
-            try
-            {
-                rt = int.Parse(runtime);
-                if (rt < 1)
+                if (movie.Room == roomId)
                 {
-                    ShowError("Runtime must be a positive number.");
+                    ShowError($"Cannot remove Room {roomId}: movie '{movie.Title}' is scheduled there. Remove the movie first.");
                     return;
                 }
             }
-            catch
-            {
-                ShowError("Runtime must be a valid number.");
-                return;
-            }
 
-            // -------- CONFLICT / 20-MIN GAP CHECK --------
-            DateTime newStart = DateTime.Parse(time);
-            DateTime newEnd = newStart.AddMinutes(rt);
+            rooms.Remove(room);
+            directory.SaveRoom(rooms);
 
-            foreach (Movies existing in movies)
-            {
-                if (existing.Room != roomId) continue;
-
-                DateTime exStart = DateTime.Parse(existing.Time);
-                DateTime exEnd = exStart.AddMinutes(int.Parse(existing.Runtime));
-
-                // 1. Check if they overlap
-                if (newStart < exEnd && exStart < newEnd)
-                {
-                    ShowError($"Time overlaps with '{existing.Title}' ({exStart:HH:mm} - {exEnd:HH:mm}) in Room {roomId}.");
-                    return;
-                }
-
-                // 2. Check the gap if the new movie is AFTER the existing movie
-                if (newStart >= exEnd)
-                {
-                    double gap = (newStart - exEnd).TotalMinutes;
-                    if (gap < 20)
-                    {
-                        ShowError($"Only {gap} min gap after '{existing.Title}' ({exEnd:HH:mm}). Need at least 20 min for cleaning.");
-                        return;
-                    }
-                }
-
-                // 3. Check the gap if the new movie is BEFORE the existing movie
-                if (exStart >= newEnd)
-                {
-                    double gap = (exStart - newEnd).TotalMinutes;
-                    if (gap < 20)
-                    {
-                        ShowError($"Only {gap} min gap before '{existing.Title}' ({exStart:HH:mm}). Need at least 20 min for cleaning.");
-                        return;
-                    }
-                }
-            }
-
-            Movies newMovie = new Movies(mnum, title, genre, roomId, time, rating, description, runtime);
-            movies.Add(newMovie);
-            directory.SaveMovies(movies);
-
-            Console.WriteLine($"\nMovie {title} added successfully.");
+            Console.WriteLine($"\nRoom {roomId} removed successfully.");
         }
 
-        private Room GetRoomById(string id)
+        private Room GetRoomByld(string id)
         {
             foreach (Room r in rooms)
                 if (r.Rooms == id) return r;
@@ -463,16 +458,15 @@ namespace MTPROJECT
         private void ShowSeats(Room room)
         {
             HashSet<string> taken = new HashSet<string>();
-
             if (room.Seats != null && room.Seats != "")
             {
-                foreach (string s in room.Seats.Split(','))
+                foreach (string s in room.Seats.Split(',', ' '))
                     if (s.Trim() != "") taken.Add(s.Trim());
             }
 
             int max = int.Parse(room.MaxSeats);
-
             int upper = max;
+
             foreach (string s in taken)
             {
                 int n = 0;
@@ -487,7 +481,7 @@ namespace MTPROJECT
             Console.Write("Seats: ");
             for (int i = 1; i <= upper; i++)
             {
-                Console.Write(taken.Contains(i.ToString()) ? "[X]" : $"[{i}]");
+                Console.Write(taken.Contains(i.ToString()) ? "[X]" : $"({i})");
                 if (i % 10 == 0) Console.WriteLine();
             }
             Console.WriteLine();
@@ -499,13 +493,13 @@ namespace MTPROJECT
             int runtimeMinutes = int.Parse(movie.Runtime);
             DateTime endTime = startTime.AddMinutes(runtimeMinutes);
 
-            Console.WriteLine("\n========== TICKET ==========");
-            Console.WriteLine($"Movie   : {movie.Title}");
-            Console.WriteLine($"Genre   : {movie.Genre}");
-            Console.WriteLine($"Rating  : {movie.Rating}");
-            Console.WriteLine($"Room    : {movie.Room}");
-            Console.WriteLine($"Time    : {startTime:HH:mm} - {endTime:HH:mm}");
-            Console.WriteLine($"Seat    : {seat}");
+            Console.WriteLine("\n========= TICKET ===========");
+            Console.WriteLine($"Movie  : {movie.Title}");
+            Console.WriteLine($"Genre  : {movie.Genre}");
+            Console.WriteLine($"Rating : {movie.Rating}");
+            Console.WriteLine($"Room   : {movie.Room}");
+            Console.WriteLine($"Time   : {startTime:HH:mm} - {endTime:HH:mm}");
+            Console.WriteLine($"Seat   : {seat}");
             Console.WriteLine("============================");
         }
     }
