@@ -29,7 +29,7 @@ namespace MTPROJECT
                 Console.Clear();
                 PrintHeader();
                 PrintMenu();
-                Console.Write("Enter choice (0-7): ");
+                Console.Write("Enter choice (0-8): ");
                 string choice = Console.ReadLine();
                 Console.Clear();
                 PrintHeader();
@@ -42,9 +42,10 @@ namespace MTPROJECT
                     case "4": AddSeats(); break;
                     case "5": AddMovie(); break;
                     case "6": RemoveMovie(); break;
-                    case "7": RemoveRoom(); break;
+                    case "7": RemoveSeats(); break; // NEW
+                    case "8": RemoveRoom(); break;  // SHIFTED
                     default:
-                        Console.WriteLine("Invalid menu option. Please enter 0 to 7.");
+                        Console.WriteLine("Invalid menu option. Please enter 0 to 8.");
                         break;
                 }
                 if (running)
@@ -57,9 +58,9 @@ namespace MTPROJECT
 
         private void PrintHeader()
         {
-            Console.WriteLine("=================================================");
-            Console.WriteLine("        MTPROJECT CINEMA SYSTEM        ");
-            Console.WriteLine("=================================================");
+            Console.WriteLine("================================================================================");
+            Console.WriteLine("                          MTPROJECT CINEMA SYSTEM                               ");
+            Console.WriteLine("================================================================================");
         }
 
         private void PrintMenu()
@@ -70,7 +71,8 @@ namespace MTPROJECT
             Console.WriteLine("4. Add Seats to Room");
             Console.WriteLine("5. Add Movie");
             Console.WriteLine("6. Remove Movie");
-            Console.WriteLine("7. Remove Room");
+            Console.WriteLine("7. Remove Seats from Room"); // NEW
+            Console.WriteLine("8. Remove Room");            // SHIFTED
             Console.WriteLine("0. Exit");
         }
 
@@ -87,22 +89,28 @@ namespace MTPROJECT
                 return;
             }
 
-            Console.WriteLine("\tTitle\t\tGenre\tRoom\tTime\t\tRating\tDescription");
-            Console.WriteLine("--------------------------------------------------------------------");
-
             foreach (Movies movie in movies)
             {
-                string startText = movie.Time;
-                string endText = "?";
-
+                // Calculate End Time
                 DateTime startTime = DateTime.Parse(movie.Time);
                 int runtimeMinutes = int.Parse(movie.Runtime);
                 DateTime endTime = startTime.AddMinutes(runtimeMinutes);
 
-                startText = startTime.ToString("HH:mm");
-                endText = endTime.ToString("HH:mm");
+                string startText = startTime.ToString("HH:mm");
+                string endText = endTime.ToString("HH:mm");
 
-                Console.WriteLine($"{movie.Mnum}\t{movie.Title}\t{movie.Genre}\t{movie.Room}\t{startText} - {endText}\t{movie.Rating}\t{movie.Description}");
+                // Print Movie Section
+                Console.WriteLine($"Movie No.  : {movie.Mnum}");
+                Console.WriteLine($"Title      : {movie.Title}");
+                Console.WriteLine($"Genre      : {movie.Genre}");
+                Console.WriteLine($"Room       : {movie.Room}");
+                Console.WriteLine($"Time       : {startText} - {endText}");
+                Console.WriteLine($"Runtime    : {runtimeMinutes} mins");
+                Console.WriteLine($"Rating     : {movie.Rating}");
+                Console.WriteLine($"Description: {movie.Description}");
+
+                // Separator between movies
+                Console.WriteLine("================================================================================");
             }
         }
 
@@ -111,7 +119,9 @@ namespace MTPROJECT
             ShowMovies();
             Console.WriteLine("Enter Movie number:");
             string Mid = Console.ReadLine();
-
+           
+            Console.Clear();
+            PrintHeader();
             if (Mid == "")
             {
                 ShowError("Enter a movie number");
@@ -142,7 +152,7 @@ namespace MTPROJECT
             }
 
             Console.WriteLine($"\nRoom {room.Rooms} - max seats: {room.MaxSeats}");
-            ShowSeats(room);
+            ShowSeats(room, selected.Mnum);
             Console.WriteLine("Enter a Seat number:");
             string Seat = Console.ReadLine();
 
@@ -152,21 +162,20 @@ namespace MTPROJECT
                 return;
             }
 
-            string Finalseats = Seat;
-            if (room.Seats == null || room.Seats == "")
-                room.Seats = Finalseats;
-            else
-                room.Seats += ($",{Finalseats}");
+            if (IsSeatTaken(selected.Mnum, Seat.Trim()))
+            {
+                ShowError($"Seat {Seat} is already reserved for this movie.");
+                return;
+            }
 
-            directory.SaveRoom(rooms);
-            reservations.Add(new CustomerR(selected.Mnum, selected.Room, Seat));
+            reservations.Add(new CustomerR(selected.Mnum, selected.Room, Seat.Trim()));
             directory.SaveReservations(reservations);
-
+            Console.Clear();
+            PrintHeader();
             Console.WriteLine($"\nReservation confirmed: Movie {selected.Title}, Room {selected.Room}, Seat {Seat}");
-            PrintTicketFor(selected, Seat);
+            PrintTicket(selected, Seat);
         }
 
-       
         private void AddRoom()
         {
             Console.WriteLine("--- ADD ROOM ---");
@@ -237,69 +246,239 @@ namespace MTPROJECT
                 return;
             }
 
-            Console.WriteLine("Enter Seat number to add: ");
-            string seat = Console.ReadLine();
+            Console.WriteLine("How many seats do you want to add? ");
+            string amountInput = Console.ReadLine();
 
-            int seatNum = 0;
+            int amountToAdd = 0;
             try
             {
-                seatNum = int.Parse(seat);
+                amountToAdd = int.Parse(amountInput);
+                if (amountToAdd < 1)
+                {
+                    ShowError("Amount must be a positive number.");
+                    return;
+                }
             }
             catch
             {
-                ShowError("Seat must be a number.");
+                ShowError("Amount must be a valid number.");
                 return;
             }
 
-            if (seatNum < 1)
-            {
-                ShowError("Seat must be a positive number.");
-                return;
-            }
-
-            if (SeatExistsInRoom(room, seat))
-            {
-                ShowError($"Seat {seat} already exists in Room {room.Rooms}.");
-                return;
-            }
-
-            if (room.Seats == null || room.Seats == "")
-                room.Seats = seat;
-            else
-                room.Seats += ($",{seat}");
+            int currentMax = int.Parse(room.MaxSeats);
+            int newMax = currentMax + amountToAdd;
+            room.MaxSeats = newMax.ToString();
 
             directory.SaveRoom(rooms);
-            Console.WriteLine($"\nSeat {seat} added to Room {room.Rooms} successfully.");
+            Console.WriteLine($"\n{amountToAdd} seats added to Room {room.Rooms} successfully. New max seats: {newMax}.");
         }
 
-        private bool SeatExistsInRoom(Room room, string seat)
+        private void RemoveSeats()
         {
-            if (room.Seats == null || room.Seats == "") return false;
+            Console.WriteLine("--- REMOVE SEATS FROM ROOM ---");
 
-            foreach (string s in room.Seats.Split(','))
-                if (s.Trim() == seat) return true;
+            if (rooms.Count == 0)
+            {
+                Console.WriteLine("No rooms available.");
+                return;
+            }
 
-            return false;
+            Console.WriteLine("\nAvailable Rooms:");
+            foreach (Room r in rooms)
+            {
+                Console.WriteLine($"  Room {r.Rooms} - Max Seats: {r.MaxSeats}");
+            }
+
+            Console.WriteLine("\nEnter Room ID: ");
+            string roomId = Console.ReadLine();
+
+            Room room = GetRoomByld(roomId);
+            if (room == null)
+            {
+                ShowError("Room not found.");
+                return;
+            }
+
+            Console.WriteLine("How many seats do you want to remove? ");
+            string amountInput = Console.ReadLine();
+
+            int amountToRemove = 0;
+            try
+            {
+                amountToRemove = int.Parse(amountInput);
+                if (amountToRemove < 1)
+                {
+                    ShowError("Amount must be a positive number.");
+                    return;
+                }
+            }
+            catch
+            {
+                ShowError("Amount must be a valid number.");
+                return;
+            }
+
+            int currentMax = int.Parse(room.MaxSeats);
+            if (amountToRemove >= currentMax)
+            {
+                ShowError($"Cannot remove {amountToRemove} seats. Room only has {currentMax} seats. Use 'Remove Room' if you want to delete it entirely.");
+                return;
+            }
+
+            int newMax = currentMax - amountToRemove;
+            room.MaxSeats = newMax.ToString();
+
+            // Clean up reservations that are out of the new bounds
+            int i = 0;
+            while (i < reservations.Count)
+            {
+                if (reservations[i].RNum == roomId)
+                {
+                    int seatNum;
+                    if (int.TryParse(reservations[i].SNum, out seatNum) && seatNum > newMax)
+                    {
+                        reservations.RemoveAt(i);
+                        continue;
+                    }
+                }
+                i++;
+            }
+            directory.SaveReservations(reservations);
+            directory.SaveRoom(rooms);
+
+            Console.WriteLine($"\n{amountToRemove} seats removed from Room {room.Rooms} successfully. New max seats: {newMax}.");
         }
 
         private void AddMovie()
         {
             Console.WriteLine("--- ADD MOVIE ---");
 
-            Console.Write("Enter Movie number: ");
-            string mnum = Console.ReadLine();
-
-            if (mnum == "")
+            int nextNum = 1;
+            foreach (Movies m in movies)
             {
-                ShowError("Movie number cannot be empty.");
+                int currentNum;
+                try
+                {
+                    currentNum = int.Parse(m.Mnum);
+                    if (currentNum >= nextNum)
+                        nextNum = currentNum + 1;
+                }
+                catch { }
+            }
+            string mnum = nextNum.ToString();
+            Console.WriteLine($"Assigned Movie Number: {mnum}");
+           
+
+
+            Console.WriteLine("Available Rooms:");
+            foreach (Room r in rooms)
+            {
+                Console.WriteLine($"  Room {r.Rooms} - Max Seats: {r.MaxSeats}");
+            }
+            Console.Write("Enter Room ID: ");
+            string roomId = Console.ReadLine();
+            if (GetRoomByld(roomId) == null)
+            {
+                ShowError($"Room {roomId} does not exist. Please add the room first.");
                 return;
             }
 
-            // NOTE: The original code after this point was truncated in the PDF.
-            // Keep the rest of your AddMovie() implementation here unchanged.
-        }
 
-        // Simplified Renumbering
+            Console.Write("Enter Time (HH:mm): ");
+            string time = Console.ReadLine();
+            DateTime newStartTime;
+            try
+            {
+                newStartTime = DateTime.Parse(time);
+            }
+            catch
+            {
+                ShowError("Invalid time format. Please use HH:mm (ex.14:30).");
+                return;
+            }
+
+
+            Console.Write("Enter Runtime (in minutes): ");
+            string runtime = Console.ReadLine();
+            int runMin;
+            try
+            {
+                runMin = int.Parse(runtime);
+                if (runMin < 1)
+                {
+                    ShowError("Runtime must be a valid positive number.");
+                    return;
+                }
+            }
+            catch
+            {
+                ShowError("Runtime must be a valid positive number.");
+                return;
+            }
+
+            
+            DateTime newEndTime = newStartTime.AddMinutes(runMin);
+            DateTime gapAllowance = newStartTime.AddMinutes(-20); 
+
+            foreach (Movies existingMovie in movies)
+            {
+                // Only check movies in the same room
+                if (existingMovie.Room == roomId)
+                {
+                    DateTime exStartTime = DateTime.Parse(existingMovie.Time);
+                    int exRuntime = int.Parse(existingMovie.Runtime);
+                    DateTime exEndTime = exStartTime.AddMinutes(exRuntime);
+
+                    // Condition A: New movie starts before the existing movie finishes + 20 mins
+                    // Condition B: New movie ends + 20 mins, after the existing movie starts
+                    if (newStartTime < exEndTime.AddMinutes(20) && newEndTime.AddMinutes(20) > exStartTime)
+                    {
+                        ShowError($"Schedule conflict in Room {roomId}!");
+                        ShowError($"'{existingMovie.Title}' runs from {exStartTime:HH:mm} to {exEndTime:HH:mm}.");
+                        ShowError($"The room needs 20 minutes for cleaning");
+                        return;
+                    }
+                }
+            }
+
+            Console.Write("Enter Title: ");
+            string title = Console.ReadLine();
+            if (title == "")
+            {
+                ShowError("Title cannot be empty.");
+                return;
+            }
+
+            Console.Write("Enter Genre: ");
+            string genre = Console.ReadLine();
+            if (genre == "")
+            {
+                ShowError("Genre cannot be empty.");
+                return;
+            }
+
+            Console.Write("Enter Rating (ex. PG-13, R): ");
+            string rating = Console.ReadLine();
+            if (rating == "")
+            {
+                ShowError("Rating cannot be empty.");
+                return;
+            }
+
+            Console.Write("Enter Description: ");
+            string description = Console.ReadLine();
+            if (description == "")
+            {
+                ShowError("Description cannot be empty.");
+                return;
+            }
+
+            Movies newMovie = new Movies(mnum, title, genre, roomId, time, rating, description, runtime);
+            movies.Add(newMovie);
+            directory.SaveMovies(movies);
+
+            Console.WriteLine($"\nMovie '{title}' (No. {mnum}) added successfully to Room {roomId}.");
+        }
         private void RenumberMovies()
         {
             for (int i = 0; i < movies.Count; i++)
@@ -307,7 +486,6 @@ namespace MTPROJECT
                 string oldNum = movies[i].Mnum;
                 string newNum = (i + 1).ToString();
 
-                // If the number changed, update it in the movies list and the reservations list
                 if (oldNum != newNum)
                 {
                     movies[i].Mnum = newNum;
@@ -324,7 +502,6 @@ namespace MTPROJECT
             directory.SaveReservations(reservations);
         }
 
-        // ============ REMOVE MOVIE ============
         private void RemoveMovie()
         {
             ShowMovies();
@@ -361,7 +538,6 @@ namespace MTPROJECT
                 return;
             }
 
-            // --- Remove reservations tied to this movie (forward while loop) ---
             int i = 0;
             while (i < reservations.Count)
             {
@@ -373,11 +549,9 @@ namespace MTPROJECT
             directory.SaveReservations(reservations);
 
             movies.Remove(toRemove);
-
-            // Re-number remaining movies 1..N and remap reservations
             RenumberMovies();
 
-            Console.WriteLine($"\nMovie '{toRemove.Title}' (No. {mnum}) removed successfully.");
+            Console.WriteLine($"\nMovie '{toRemove.Title}' removed successfully.");
         }
 
         private void RemoveRoom()
@@ -424,6 +598,17 @@ namespace MTPROJECT
             rooms.Remove(room);
             directory.SaveRoom(rooms);
 
+            // Also clean up any lingering reservations in this room
+            int i = 0;
+            while (i < reservations.Count)
+            {
+                if (reservations[i].RNum == roomId)
+                    reservations.RemoveAt(i);
+                else
+                    i++;
+            }
+            directory.SaveReservations(reservations);
+
             Console.WriteLine($"\nRoom {roomId} removed successfully.");
         }
 
@@ -434,20 +619,6 @@ namespace MTPROJECT
             return null;
         }
 
-        private bool IsValidSeat(string seat)
-        {
-            int n = 0;
-            try
-            {
-                n = int.Parse(seat);
-                return n >= 1;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         private bool IsSeatTaken(string movieNum, string seat)
         {
             foreach (CustomerR r in reservations)
@@ -455,39 +626,69 @@ namespace MTPROJECT
             return false;
         }
 
-        private void ShowSeats(Room room)
+        private void ShowSeats(Room room, string movieNum)
         {
-            HashSet<string> taken = new HashSet<string>();
+            int max = int.Parse(room.MaxSeats);
+            List<string> takenSeats = new List<string>();
+
+            // 1. Check reservations
+            foreach (CustomerR r in reservations)
+            {
+                if (r.Movie == movieNum)
+                {
+                    takenSeats.Add(r.SNum.Trim());
+                }
+            }
+
+            // 2. Check blocked seats
             if (room.Seats != null && room.Seats != "")
             {
                 foreach (string s in room.Seats.Split(',', ' '))
-                    if (s.Trim() != "") taken.Add(s.Trim());
-            }
-
-            int max = int.Parse(room.MaxSeats);
-            int upper = max;
-
-            foreach (string s in taken)
-            {
-                int n = 0;
-                try
                 {
-                    n = int.Parse(s);
-                    if (n > upper) upper = n;
+                    if (s.Trim() != "")
+                    {
+                        takenSeats.Add(s.Trim());
+                    }
                 }
-                catch { }
             }
 
-            Console.Write("Seats: ");
-            for (int i = 1; i <= upper; i++)
+            int seatsPerRow = 10;
+
+            Console.WriteLine("\n                 [ SCREEN THIS WAY ]");
+            Console.WriteLine("--------------------------------------------------");
+
+            for (int i = 1; i <= max; i++)
             {
-                Console.Write(taken.Contains(i.ToString()) ? "[X]" : $"({i})");
-                if (i % 10 == 0) Console.WriteLine();
+                bool isTaken = false;
+
+                // Manually check if the seat is in the taken list
+                foreach (string s in takenSeats)
+                {
+                    if (s == i.ToString())
+                    {
+                        isTaken = true;
+                        break;
+                    }
+                }
+
+                // Print seat
+                if (isTaken)
+                    Console.Write($" {i,2}[X] ");
+                else
+                    Console.Write($" {i,2}[ ] ");
+
+                if (i % seatsPerRow == 0)
+                    Console.WriteLine();
             }
-            Console.WriteLine();
+
+            if (max % seatsPerRow != 0)
+                Console.WriteLine();
+
+            Console.WriteLine("--------------------------------------------------");
+            Console.WriteLine("  [ ] = Available    [X] = Taken\n");
         }
 
-        private void PrintTicketFor(Movies movie, string seat)
+        private void PrintTicket(Movies movie, string seat)
         {
             DateTime startTime = DateTime.Parse(movie.Time);
             int runtimeMinutes = int.Parse(movie.Runtime);

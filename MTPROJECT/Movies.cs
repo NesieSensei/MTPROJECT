@@ -28,7 +28,6 @@ namespace MTPROJECT
             Rating = Rating_;
             Description = Description_;
             Runtime = Runtime_;
-
         }
     }
 }

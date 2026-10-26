@@ -24,8 +24,7 @@ namespace MTPROJECT
                 while (!reader.EndOfStream)
                 {
                     string[] data = reader.ReadLine().Split(',');
-                    allmovie.Add(new Movies(data[0], data[1], data[2], data[3],
-                                            data[4], data[5], data[6], data[7]));
+                    allmovie.Add(new Movies(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]));
                 }
             }
             return allmovie;
@@ -118,9 +117,9 @@ namespace MTPROJECT
             {
                 using (StreamWriter writer = new StreamWriter("Movie.csv"))
                 {
-                    writer.WriteLine("1,Inception,Sci-Fi,1,10:00,PG-13,Dream thief heist,148,2026-02-20");
-                    writer.WriteLine("2,Interstellar,Sci-Fi,2,13:00,PG-13,Space exploration,169,2026-02-20");
-                    writer.WriteLine("3,The Godfather,Crime,1,14:30,R,Mafia family saga,175,2026-02-20");
+                    writer.WriteLine("1,MAXPEIN,Sci-Fi Action,1,10:00,PG-13,Dream thief heist,120");
+                    writer.WriteLine("2,Interstellar,Sci-Fi,2,13:00,PG-13,Space exploration,120");
+                    writer.WriteLine("3,The Godfather,Crime,3,14:30,R,Mafia family saga,120");
                 }
             }
 
