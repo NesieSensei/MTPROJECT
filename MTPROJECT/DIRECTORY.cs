@@ -14,17 +14,17 @@ namespace MTPROJECT
             List<Movies> allmovie = new List<Movies>();
             string path = "Movie.csv";
 
-            if (!File.Exists(path))
-            {
-                return allmovie;
-            }
+            if (!File.Exists(path)) return allmovie;
 
             using (StreamReader reader = new StreamReader(path))
             {
                 while (!reader.EndOfStream)
                 {
                     string[] data = reader.ReadLine().Split(',');
-                    allmovie.Add(new Movies(data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]));
+                    if (data.Length >= 7)
+                    {
+                        allmovie.Add(new Movies(data[0], data[1], data[2], data[3], data[4], data[5], data[6]));
+                    }
                 }
             }
             return allmovie;
@@ -32,13 +32,11 @@ namespace MTPROJECT
 
         public void SaveMovies(List<Movies> allmovie)
         {
-            string path = ("Movie.csv");
-
-            using (StreamWriter writer = new StreamWriter(path))
+            using (StreamWriter writer = new StreamWriter("Movie.csv"))
             {
                 foreach (Movies movie in allmovie)
                 {
-                    writer.WriteLine($"{movie.Mnum},{movie.Title},{movie.Genre},{movie.Room},{movie.Time},{movie.Rating},{movie.Description},{movie.Runtime}");
+                    writer.WriteLine($"{movie.Mnum},{movie.Title},{movie.Genre},{movie.Rating},{movie.Description},{movie.Runtime},{movie.Price}");
                 }
             }
         }
@@ -48,10 +46,7 @@ namespace MTPROJECT
             List<Room> Rooms = new List<Room>();
             string path = "Room.csv";
 
-            if (!File.Exists(path))
-            {
-                return Rooms;
-            }
+            if (!File.Exists(path)) return Rooms;
 
             using (StreamReader reader = new StreamReader(path))
             {
@@ -66,9 +61,7 @@ namespace MTPROJECT
 
         public void SaveRoom(List<Room> room)
         {
-            string path = ("Room.csv");
-
-            using (StreamWriter writer = new StreamWriter(path))
+            using (StreamWriter writer = new StreamWriter("Room.csv"))
             {
                 foreach (Room rooms in room)
                 {
@@ -82,17 +75,17 @@ namespace MTPROJECT
             List<CustomerR> allres = new List<CustomerR>();
             string path = "Reservation.csv";
 
-            if (!File.Exists(path))
-            {
-                return allres;
-            }
+            if (!File.Exists(path)) return allres;
 
             using (StreamReader reader = new StreamReader(path))
             {
                 while (!reader.EndOfStream)
                 {
                     string[] data = reader.ReadLine().Split(',');
-                    allres.Add(new CustomerR(data[0], data[1], data[2]));
+                    if (data.Length >= 4)
+                    {
+                        allres.Add(new CustomerR(data[0], data[1], data[2], data[3]));
+                    }
                 }
             }
             return allres;
@@ -100,13 +93,43 @@ namespace MTPROJECT
 
         public void SaveReservations(List<CustomerR> allres)
         {
-            string path = ("Reservation.csv");
-
-            using (StreamWriter writer = new StreamWriter(path))
+            using (StreamWriter writer = new StreamWriter("Reservation.csv"))
             {
                 foreach (CustomerR res in allres)
                 {
-                    writer.WriteLine($"{res.Movie},{res.RNum},{res.SNum}");
+                    writer.WriteLine($"{res.Movie},{res.RNum},{res.Time},{res.SNum}");
+                }
+            }
+        }
+
+        public List<Schedule> LoadSchedules()
+        {
+            List<Schedule> schedules = new List<Schedule>();
+            string path = "Schedule.csv";
+
+            if (!File.Exists(path)) return schedules;
+
+            using (StreamReader reader = new StreamReader(path))
+            {
+                while (!reader.EndOfStream)
+                {
+                    string[] data = reader.ReadLine().Split(',');
+                    if (data.Length >= 3)
+                    {
+                        schedules.Add(new Schedule(data[0], data[1], data[2]));
+                    }
+                }
+            }
+            return schedules;
+        }
+
+        public void SaveSchedules(List<Schedule> schedules)
+        {
+            using (StreamWriter writer = new StreamWriter("Schedule.csv"))
+            {
+                foreach (Schedule s in schedules)
+                {
+                    writer.WriteLine($"{s.MovieNum},{s.RoomId},{s.Time}");
                 }
             }
         }
@@ -117,9 +140,6 @@ namespace MTPROJECT
             {
                 using (StreamWriter writer = new StreamWriter("Movie.csv"))
                 {
-                    writer.WriteLine("1,MAXPEIN,Sci-Fi Action,1,10:00,PG-13,Dream thief heist,120");
-                    writer.WriteLine("2,Interstellar,Sci-Fi,2,13:00,PG-13,Space exploration,120");
-                    writer.WriteLine("3,The Godfather,Crime,3,14:30,R,Mafia family saga,120");
                 }
             }
 
@@ -127,17 +147,18 @@ namespace MTPROJECT
             {
                 using (StreamWriter writer = new StreamWriter("Room.csv"))
                 {
-                    writer.WriteLine("1,,50");
-                    writer.WriteLine("2,,40");
-                    writer.WriteLine("3,,30");
                 }
             }
 
             if (!File.Exists("Reservation.csv"))
             {
-                using (StreamWriter writer = new StreamWriter("Reservation.csv"))
+                using (StreamWriter writer = new StreamWriter("Reservation.csv")) { }
+            }
+
+            if (!File.Exists("Schedule.csv"))
+            {
+                using (StreamWriter writer = new StreamWriter("Schedule.csv"))
                 {
-                    
                 }
             }
         }

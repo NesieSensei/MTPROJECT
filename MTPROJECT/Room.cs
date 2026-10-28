@@ -12,7 +12,7 @@ namespace MTPROJECT
         public string Seats;
         public string MaxSeats;
 
-        public Room(string Rooms_,string Seats_,string MaxSeats_)
+        public Room(string Rooms_, string Seats_, string MaxSeats_)
         {
             Rooms = Rooms_;
             Seats = Seats_;
